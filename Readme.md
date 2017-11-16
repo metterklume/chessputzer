@@ -1,6 +1,6 @@
 **Chessputzer** is designed to recognize positions from books and magazines. Use the [web interface](https://www.ocf.io/abhishek/putz). 
 
-![boardexamples](C:\Users\klein\Dropbox\putz\boardexamples.png)
+![Examples](boardexamples.png)
 
 For best results, make sure that you include the border of the chessboard and crop close to it.If parts of the diagram are blurry or too hard to read, the algorithm makes the best guess instead of giving up. You can always correct mistakes in the [Lichess](http://lichess.org) link. 
 
