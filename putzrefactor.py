@@ -15,11 +15,11 @@ from os.path import basename
 import requests
 from io import BytesIO
 import sys
-if sys.platform == 'win32':
-    import PIL.ImageGrab as ImageGrab
+#if sys.platform == 'win32':
+#    import PIL.ImageGrab as ImageGrab
 
 from putzpresets import pathtemps,pieces,piecenames
-from putzpresets import houghbox,splitboardhough,splitboard,boardtofen,norma
+from putzpresets import houghbox,splitboardhough,splitboardcontour,boardtofen,norma
 
 class Board():
     def __init__(self,*impath):
@@ -29,13 +29,14 @@ class Board():
             self.im = ImageGrab.grabclipboard()
         self.ima = np.asarray(self.im.convert("L"),dtype=np.uint8)
         #self.imablur = np.uint8(gaussim(self.ima,m=4))
-        self.squares = splitboardhough(self.ima,minfactor=.4)
+        self.squares = splitboardcontour(self.ima)
 #        if not self.squares:
 #            self.squares = splitboard(self.ima)
         self.squares = [np.bitwise_not(s) for s in self.squares]
         self.g = [-1]*64
-    #    
-    def getpieces(self,pbarrs):        
+    #
+    #
+    def getpieces(self,pbarrs):
         if not self.squares:
             return ""
         candidates = [[]]*64
@@ -46,20 +47,14 @@ class Board():
         for i,s in enumerate(self.squares):
             ld = (i + (i//8))%2
             tg,to = piecepred(s,pbarrs,ld)
-            if tg[0] == 12:
-                guesses[i] = 12
-                candidates[i] = [12]
-            else:
-                #
-                #print(i,tg,to)
-                assert(len(tg)==len(to))
-                to = [x for x in to if x>.5]
-                tg = tg[len(tg)-len(to):]
-                #
-                assert(len(tg)==len(to))
-                guesses[i] = tg[-1]
-                candidates[i] = tg
-                candprobs[i]  = to
+            assert(len(tg)==len(to))
+            to = [x for x in to if x>.5]
+            tg = tg[len(tg)-len(to):]
+            #
+            assert(len(tg)==len(to))
+            guesses[i] = tg[-1]
+            candidates[i] = tg
+            candprobs[i]  = to
         #
         piecemax=[8,2,2,2,1,1,8,2,2,2,1,1,64]
         def toomany(p,nextbest=True):
@@ -83,31 +78,39 @@ class Board():
                         guesses[q] = 12
             print("changed %d %s"%(len(inds),pieces[p]))
             return len(inds)
-        #
-        #second pass, no pawns on the first or eighth ranks
-        for q in list(range(8))+list(range(56,64)):
-            if guesses[q] == 0 or guesses[q]==6:
-                candidates[q].pop(-1)
-                candprobs[q].pop(-1)
-                if candidates[q]:
-                    guesses[q] = candidates[q][-1]
-                else:
-                    guesses[q] = 12
-        #one king each
-        toomany(5,nextbest=False)
-        toomany(11,nextbest=False)
-        #one queen each
-        toomany(4,nextbest=True)
-        toomany(10,nextbest=True)
-        #two rooks
-        toomany(7,nextbest=False)
-        toomany(1,nextbest=True)
-        #two knights
-        toomany(8,nextbest=False)
-        toomany(1,nextbest=True)
-        #eight pawns
-        toomany(6,nextbest=False)
-        toomany(0,nextbest=True)
+        #        
+        changed = 1
+        while changed > 0:
+            changed = 0 
+            #no pawns on the first or eighth ranks
+            for q in list(range(8))+list(range(56,64)):
+                if guesses[q] == 0 or guesses[q]==6:
+                    changed += 1
+                    candidates[q].pop(-1)
+                    candprobs[q].pop(-1)
+                    if candidates[q]:
+                        guesses[q] = candidates[q][-1]
+                    else:
+                        guesses[q] = 12
+            #one king each
+            changed += toomany(5,nextbest=True)
+            changed += toomany(11,nextbest=True)
+            #one queen each
+            changed += toomany(4,nextbest=True)
+            changed += toomany(10,nextbest=True)
+            #two rooks
+            changed += toomany(7,nextbest=True)
+            changed += toomany(1,nextbest=True)
+            #two knights
+            changed += toomany(8,nextbest=True)
+            changed += toomany(1,nextbest=True)
+            #eight pawns
+            changed += toomany(6,nextbest=True)
+            changed += toomany(0,nextbest=True)
+            #two bishops
+            changed += toomany(9,nextbest=True)
+            changed += toomany(3,nextbest=True)
+            #
         self.g = guesses
         self.b=""
         for i,s in enumerate(guesses):
@@ -162,7 +165,7 @@ def pieceacc(pathtodir,piece,units,ld):
         return (-1,[],[])
     pims = [Image.open(pname) for pname in pnames]
     parrs = [np.bitwise_not(np.asarray(im,np.uint8)) for im in pims]
-    results = [piecepred(imarr,units,ld) for imarr in parrs]
+    results = [piecepred(imarr,units,ld)[0][-1] for imarr in parrs]
     corr = [1 if i==pieces.index(piece) else 0 for i in results]
     #corr2 = [1 if (i-pieces.index(piece))%6==0 else 0 for i in results]
     wrongs = [results[i] for i,x in enumerate(corr) if x==0]
@@ -206,7 +209,7 @@ def fentoimg(fen):
     img = Image.open(BytesIO(response.content))
     return img
 
-### Load image templates 
+### Load image templates
 nsets = 3
 alltemps = np.load('pbarrs.npz').items()[0][1]
 numpieces = nsets * 12

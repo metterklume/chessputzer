@@ -5,11 +5,15 @@ import PIL.Image as Image
 import scipy.signal
 import cv2
 import PIL.ImageFilter as ImageFilter
-from IPython.display import display
+try:
+    from IPython.display import display
+except ImportError:
+    pass
 #import matplotlib.pyplot as plt
 import glob
 from io import BytesIO
 from math import floor
+from numpy.linalg import norm
 
 # pathboards = os.path.expanduser("~")+"/Dropbox/putz/boards3/"
 # pathlight = pathboards+'lightsquares/'
@@ -61,7 +65,6 @@ def gaussim(a,m=6,sdev=2):
             gwin[i,j] = f[i]*f[j]
     return scipy.signal.convolve2d(a,gwin/gwin.sum(),mode='same')
 
-
 def probs(overs,nsets=3):
     pl = np.array([max(overs[i:i+nsets]) for i in range(0,len(overs),nsets)])
     return [(pieces[i],pl[i]) for i in np.argsort(pl)[::-1][:4]]
@@ -74,7 +77,7 @@ def piecepredold(imarr,pset,ld):
     else: #just resize
         imarr = cv2.resize(imarr,(32,32),interpolation=cv2.INTER_AREA)
     imarr = np.float32(imarr)
-    if np.mean(imarr)<1:
+    if np.mliensean(imarr)<1:
         return 12
     imarr = imarr/norma(imarr)
     overs = [overlap(p,imarr) for p in pset]
@@ -82,7 +85,7 @@ def piecepredold(imarr,pset,ld):
         return 12
     else:
         return int(np.argmax(overs)/nsets)
-    
+
 def piecepredebug(imarr,pset,ld):
     nsets = len(pset)/12
 #    if blankpred(imarr,ld) == 1:
@@ -135,13 +138,13 @@ def houghbox(imarr,minfactor=.4,rho=1):
         return [],[],(0,0),(0,0)
     #careful below! I had horizontal and vertical confused at first
     #and of course it still works if the image is almost a square
-    vlines = np.sort([l[0] for [l] in lines if abs(l[1])<tol]).astype(np.int)
-    hlines = np.sort([l[0] for [l] in lines if abs(l[1]-np.pi/2)<tol]).astype(np.int)
-    #print(lines)
+    vlines = np.sort([x[0] for [x] in lines if abs(x[1])<tol]).astype(np.int)
+    hlines = np.sort([x[0] for [x] in lines if abs(x[1]-np.pi/2)<tol]).astype(np.int)
     if len(vlines) <=1  or len(hlines) <= 1:
         print("Not enough lines")
         return hlines,vlines,(0,0),(0,0)
     up,down = 0,len(hlines)-1
+    #print('check')
     while hlines[down]-hlines[up] > l*7/8:
         up+=1
     up-=1
@@ -161,16 +164,121 @@ def houghbox(imarr,minfactor=.4,rho=1):
     #print(hlines,up,down,vlines,left,right)
     return hlines,vlines,(hlines[up],hlines[down]),(vlines[left],vlines[right])
 
+
 def splitboardhough(ima,minfactor=.33):
-    imablur = np.uint8(gaussim(ima,m=4))
-    _,_,(up,down),(left,right) = houghbox(imablur,minfactor=minfactor)
     l,w = ima.shape
+    imablur = np.uint8(gaussim(ima,m=5))
+    _,_,(up,down),(left,right) = houghbox(imablur,minfactor=minfactor)
     if down-up< l*3/4 or right-left < w*3/4:
         return []
     else:
         xw,yw = int(round((down-up)/8)),int(round((right-left)/8))
         print(xw,yw)
         return [ima[up+j*xw:up+(j+1)*xw,left+i*yw:left+(i+1)*yw] for j in range(8) for i in range(8)]
+
+def splitboardcontour(ima):
+    bounds = contourbox(ima)
+    if bounds is None:
+        imapad = np.pad(ima,(2,),'constant',constant_values=(0,))
+        imapad = np.pad(imapad,(2,),'constant',constant_values=(255,))
+        bounds = contourbox(imapad)
+        ima = imapad
+    if bounds:
+        up,down,left,right = bounds
+        xw,yw = int(round((down-up)/8)),int(round((right-left)/8))
+        print(xw,yw)
+        return [ima[up+j*xw:up+(j+1)*xw,left+i*yw:left+(i+1)*yw] for j in range(8) for i in range(8)]
+    else:
+        return []
+
+def contourbox(ima):
+    l,w = ima.shape
+    for k in (11,7,3):
+        imablur = cv2.GaussianBlur(ima,(k,k),0)
+        ee = cv2.Canny(imablur,200,400,apertureSize = 5)
+        _,contours,_ = cv2.findContours(ee, 1, 2)
+        boxes = [c for c in contours if cv2.contourArea(c)>.8*l*w]
+        if boxes:
+            break
+    if not boxes:
+        ee = cv2.Canny(ima,100,200,apertureSize = 5)
+        _,contours,_ = cv2.findContours(ee, 1, 2)
+        boxes = [c for c in contours if cv2.contourArea(c)>.8*l*w]
+    if not boxes:
+        kernel = np.ones((5,5),np.uint8)
+        opening = cv2.morphologyEx(ima,cv2.MORPH_OPEN, kernel)
+        for k in (11,7,3):
+            imablur = cv2.GaussianBlur(opening,(k,k),0)
+            ee = cv2.Canny(imablur,100,200,apertureSize = 5)
+            _,contours,_ = cv2.findContours(ee, 1, 2)
+            boxes = [c for c in contours if cv2.contourArea(c)>.8*l*w]
+            if boxes:
+                break
+    # if not boxes:
+    #     ee = cv2.Canny(imapad,100,200,apertureSize = 5)
+    #     _,contours,_ = cv2.findContours(ee, 1, 2)
+    #     boxes = [c for c in contours if cv2.contourArea(c)>.8*l*w]
+    if not boxes:
+        return None
+    areas = [cv2.contourArea(b) for b in boxes]
+    arcareas = [(cv2.arcLength(b,True)/4)**2 for b in boxes]
+    sqboxes = [b for i,b in enumerate(boxes) if (1-areas[i]/arcareas[i])<.1]
+    if sqboxes:
+        sqareas = [cv2.contourArea(b) for b in sqboxes]
+        inbox = sqboxes[np.argmin(sqareas)]
+    else:
+        return None
+    inboxflat = inbox.reshape(inbox.shape[0],-1)
+    #
+    x,y,w,h = cv2.boundingRect(inbox)
+    tl,tr,br,bl = (x,y),(x+w,y),(x+w,y+h),(x,y+h)
+    rect = np.array([tl,tr,br,bl])
+    corners = [np.argmin([norm(inboxflat[j]-pt) for j in range(inboxflat.shape[0])])
+           for pt in rect]
+    toparc = subarc(inboxflat,corners[0],corners[1],corners[2])[:,1]
+    bottomarc = subarc(inboxflat,corners[2],corners[3],corners[0])[:,1]
+    leftarc = subarc(inboxflat,corners[0],corners[3],corners[1])[:,0]
+    rightarc = subarc(inboxflat,corners[1],corners[2],corners[0])[:,0]
+    #
+    (t,b,l,r)=[int(round(np.median(a))) for a in (toparc,bottomarc,leftarc,rightarc)]
+    return t,b,l,r
+
+def showboardlines(ima,thickness=3):
+    sides = contourbox(ima)
+    if not sides:
+        return None
+    t,b,l,r = sides
+    imacol = cv2.cvtColor(ima,cv2.COLOR_GRAY2BGR)
+    cv2.line(imacol,(l,t),(r,t),(0,0,255),thickness)
+    cv2.line(imacol,(l,b),(r,b),(0,0,255),thickness)
+    cv2.line(imacol,(l,t),(l,b),(0,0,255),thickness)
+    cv2.line(imacol,(r,t),(r,b),(0,0,255),thickness)
+    return imacol
+
+def subarc(arc,start,end,other):
+    arcf = arc.reshape(-1,2)
+    arclen = arcf.shape[0]
+    start,end = min(start,end),max(start,end)
+    if end-start<2:
+        return arc[start:end+1]
+    if start < other and other < end:
+        return np.concatenate((arc[end:],arc[:start+1]))
+    else:
+        return arc[start:end+1]
+
+def subarc2(arc,start,end):
+    arcf = arc.reshape(-1,2)
+    arclen = arcf.shape[0]
+    if abs(start-end)<arclen//2:
+        if start < end:
+            return arc[start:end+1]
+        else:
+            return arc[end:start+1][::-1]
+    else:
+        if start < end:
+            return np.concatenate((arc[end:],arc[:start+1]))[::-1]
+        else:
+            return np.concatenate((arc[start:],arc[:end+1]))
 
 def splitboard(ima):
     fudge = -2
@@ -196,11 +304,12 @@ def splitboard(ima):
 
 def showbounds(ima,minfactor=.4):
     imc = np.copy(ima)
-    xl,yl,ylines,xlines=houghbox(imc,minfactor)
+    imc = np.uint8(gaussim(ima,m=5))
+    hlines,vlines,(up,down),(left,right)=houghbox(imc,minfactor)
     plt.imshow(imc)
-    for x in xl:
+    for x in vlines:
         plt.axvline(x,color='b')
-    for y in yl:
+    for y in hlines:
         plt.axhline(y,color='r')
     return None
 
