@@ -1,4 +1,4 @@
-**Chessputzer** is designed to recognize positions from books and magazines. Use the [web interface](https://www.ocf.io/abhishek/putz). 
+**Chessputzer** is designed to recognize positions from books and magazines. Use the [web interface](https://www.ocf.berkeley.edu/~abhishek/putz/). 
 
 ![Examples](boardexamples.png)
 
