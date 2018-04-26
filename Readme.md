@@ -4,7 +4,11 @@
 
 For best results, make sure that you include the border of the chessboard and crop close to it.If parts of the diagram are blurry or too hard to read, the algorithm makes the best guess based on the other pieces on the board. Please let me know if you have examples of books and images that don't work well.  
 
+<<<<<<< HEAD
 **Note**: the program is intended for fonts that usually appear in published works. Images created by chess software might not work. 
+=======
+Please let me know if you have examples of books and images that don't work well.  **Note**: the program is intended for fonts that usually appear in published works. Images created by chess software might not work. 
+>>>>>>> 642a0e1bc75ebd3104f30f56288259100f426096
 
 Have fun!
 
