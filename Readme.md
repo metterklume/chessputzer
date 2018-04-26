@@ -16,9 +16,9 @@ Have fun!
 
 **How it works**
 
-1. [Cropping and Cutting]("Splitting up the board.ipynb") where we detect the boundary of the chessboard and split it up into 64 squares.
+1. [Cropping and Cutting](Splitting up the board.ipynb) where we detect the boundary of the chessboard and split it up into 64 squares.
 
-2. [Filtering and Matching]("Matching and Filtering.ipynb") where we rediscover the ancient technique of template matching. And spend many happy hours removing the stripes from the dark squares. 
+2. [Filtering and Matching]("./Matching and Filtering.ipynb") where we rediscover the ancient technique of template matching. And spend many happy hours removing the stripes from the dark squares. 
 
 3. *Error correction* where we admit that the board probably does not have six knights on it, and make the best guess.
 
