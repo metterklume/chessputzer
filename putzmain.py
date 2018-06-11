@@ -15,6 +15,8 @@ from os.path import basename
 import requests
 from io import BytesIO
 import sys
+import argparse,imghdr
+
 #if sys.platform == 'win32':
 #    import PIL.ImageGrab as ImageGrab
 
@@ -126,7 +128,7 @@ def piecepred(imarr,pset,ld):
         return [12],[1]
     if ld == 0 and blanktest(imarr) < 10:   #screen out blank images
         return [12],[1]
-    imarr=np.where(imarr<100,0,imarr)
+#    imarr=np.where(imarr<100,0,imarr)
     if ld == 1: #get rid of some of the striped background & resize
         imarr = backfilter(imarr)
     else:      #just resize
@@ -137,7 +139,7 @@ def piecepred(imarr,pset,ld):
         return [12],[1]
     imarr = imarr/norma(imarr)
     overs = [overlap(p,imarr) for p in pset]
-    if max(overs) < .5: #not enough overlap with any piece
+    if max(overs) < .55: #not enough overlap with any piece
         return [12],[1]
     redovers = [max(overs[i:i+nsets]) for i in range(0,len(overs),nsets)]
     topguesses = np.argsort(redovers)[-4:]
@@ -216,3 +218,46 @@ numpieces = nsets * 12
 rows = alltemps.shape[0]//numpieces
 pbarrs = [alltemps[rows*i:rows*(i+1)][:] for i in range(numpieces)]
 assert(len(pbarrs) == numpieces)
+
+if __name__ == '__main__':
+    ap = argparse.ArgumentParser()    
+    ap.add_argument("-f", "--file", required=False,help="Image file in png, jpeg or gif format")
+    ap.add_argument("-o","--output",required=False,default="fens.txt",
+                    help="Output file. Default = fens.txt. Will be overwritten if it exists")
+    ap.add_argument("-d","--directory",required=False,help="Image directory. All images in png, jpeg or gif format will be processed")    
+    args = vars(ap.parse_args())
+    
+    outfile=args.get("output","fens.txt")
+    if not args["file"] and not args["directory"]:
+        print("Error. Either --file <imagefile> or --directory <imagedirectory> must be specified")
+    if args["file"]:
+        fname = args["file"]
+        if not imghdr.what(fname):
+            print("Not a valid image file")
+        else:
+            bd = Board(fname)
+            fen = bd.getpieces(pbarrs)
+            with open(outfile,"w") as fileout:
+                fileout.write(fname+"\n")
+                if fen:
+                    fileout.write(fen+"\n")
+                else:
+                    fileout.write("Couldn't find chessboard\n")
+    elif args["directory"]:
+        imdir = args["directory"]
+        if imdir[-1] != "/":
+            imdir += "/"
+        exts = ("png","jpg","gif")
+        fnames = []
+        for e in exts:
+            fnames += glob.glob(imdir+"*"+e)
+        with open(outfile,"w") as fileout:
+            for fname in fnames:
+                bd = Board(fname)
+                fen = bd.getpieces(pbarrs)
+                fileout.write(fname+"\n")
+                if fen:
+                    fileout.write(fen+"\n")
+                else:
+                    fileout.write("Couldn't find chessboard\n")
+
