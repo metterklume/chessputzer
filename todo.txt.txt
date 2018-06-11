@@ -1,0 +1,6 @@
+Replace scipy convolve2d with
+cv2.filter2D(ima, -1, kernel)
+
+Replace gaussian blurring with
+cv2 equivalent
+
