@@ -1,4 +1,4 @@
-**Chessputzer** recognizes chess positions. Use the [web interface](https://www.ocf.berkeley.edu/~abhishek/putz/). 
+**Chessputzer** recognizes chess positions. Use the [web interface](https://www.ocf.berkeley.edu/~abhishek/putz/) (easier!) or follow these [instructions](commandline.md) for the command line.  
 
 ![Examples](boardexamples.png)
 
