@@ -10,11 +10,11 @@ You need the files: `putzmain.py`, `putzlib.py` and `pbarrs.npz` in a single dir
 
 For a single chessboard image:
 
-python -m putzmain.py -f <imagefile> -o <output txt file>
+python -m putzmain.py -f `imagefile` -o `output txt file`
 
 For a directory of images:
 
-python -m putzmain.py -d <imagedirectory> -o <output txt file>
+python -m putzmain.py -d `imagedirectory` -o `output txt file`
 
 If no output file is specified, output is written to fens.txt (overwritten if it exists!). In the first case output is a single line with the FEN position. In the second, it is written as line1: filename line 2: FEN... for each of the file(s) in the directory.
 
