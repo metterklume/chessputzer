@@ -6,13 +6,13 @@ Python + the following packages: numpy, opencv, scipy, pillow
 
 **Usage**
 
-You need the files: putzmain.py, putzlib.py and pbarrs.npz in a single directory.
+You need the files: `putzmain.py`, `putzlib.py` and `pbarrs.npz` in a single directory.
 
-For a single file:
+For a single chessboard image:
 
 python -m putzmain.py -f <imagefile> -o <output txt file>
 
-For a directory:
+For a directory of images:
 
 python -m putzmain.py -d <imagedirectory> -o <output txt file>
 
