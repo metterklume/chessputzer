@@ -213,7 +213,7 @@ def fentoimg(fen):
 
 ### Load image templates
 nsets = 3
-alltemps = np.load('pbarrs.npz').items()[0][1]
+alltemps = list(np.load('pbarrs.npz').items())[0][1]
 numpieces = nsets * 12
 rows = alltemps.shape[0]//numpieces
 pbarrs = [alltemps[rows*i:rows*(i+1)][:] for i in range(numpieces)]
