@@ -196,13 +196,13 @@ def contourbox(ima):
     for k in (11,7,3):
         imablur = cv2.GaussianBlur(ima,(k,k),0)
         ee = cv2.Canny(imablur,200,400,apertureSize = 5)
-        _,contours,_ = cv2.findContours(ee, 1, 2)
+        contours,_ = cv2.findContours(ee, 1, 2)
         boxes = [c for c in contours if cv2.contourArea(c)>.8*l*w]
         if boxes:
             break
     if not boxes:
         ee = cv2.Canny(ima,100,200,apertureSize = 5)
-        _,contours,_ = cv2.findContours(ee, 1, 2)
+        contours,_ = cv2.findContours(ee, 1, 2)
         boxes = [c for c in contours if cv2.contourArea(c)>.8*l*w]
     if not boxes:
         kernel = np.ones((5,5),np.uint8)
@@ -210,7 +210,7 @@ def contourbox(ima):
         for k in (11,7,3):
             imablur = cv2.GaussianBlur(opening,(k,k),0)
             ee = cv2.Canny(imablur,100,200,apertureSize = 5)
-            _,contours,_ = cv2.findContours(ee, 1, 2)
+            contours,_ = cv2.findContours(ee, 1, 2)
             boxes = [c for c in contours if cv2.contourArea(c)>.8*l*w]
             if boxes:
                 break
