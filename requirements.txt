@@ -1,0 +1,9 @@
+numpy
+opencv-python
+scipy
+pillow
+requests
+argparse
+
+keras
+tensorflow

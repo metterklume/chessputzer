@@ -198,7 +198,7 @@ def backfilter(im,finalshape=(32,32),passes=2):
     for _ in range(passes):
         mask =np.zeros(imcvg.shape,np.uint8)
         ee = cv2.Canny(imcvg,200,400,apertureSize = 3)
-        _,contours,_ = cv2.findContours(ee, 1, 2)
+        contours,_ = cv2.findContours(ee, 1, 2)
         dashes = [c for c in contours if abs(cv2.minAreaRect(c)[2]+45)<8]
         cv2.drawContours(mask,dashes,-1,255,4)
         imclean = np.where(mask==0,imcvg,0)
@@ -213,7 +213,7 @@ def fentoimg(fen):
 
 ### Load image templates
 nsets = 3
-alltemps = np.load('pbarrs.npz').items()[0][1]
+alltemps = list(np.load('pbarrs.npz').items())[0][1]
 numpieces = nsets * 12
 rows = alltemps.shape[0]//numpieces
 pbarrs = [alltemps[rows*i:rows*(i+1)][:] for i in range(numpieces)]
